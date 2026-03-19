@@ -6,8 +6,9 @@ import threading
 
 from launcher.minecraft_runner import (
     is_version_installed, install_version, launch_version, VERSION,
-    is_forge_installed, install_forge,
+    is_forge_installed, install_forge, get_minecraft_dir,
 )
+from launcher.mod_manager import apply_modpack
 from ui.theme import (
     BG_DEEP, BG_DARK, BG_CARD, BG_CARD_HOVER,
     GOLD, GOLD_DIM, EMERALD, EMERALD_HOVER,
@@ -419,7 +420,18 @@ class ModeDetailsScreen(tk.Frame):
                     return
                 self.after(0, self._show_status, "Forge installed!")
 
-            # Step 3 — launch (automatically uses Forge version)
+            # Step 3 — apply modpack for the selected mode
+            self.after(0, self._show_status, "Preparing mods...")
+            ok, err = apply_modpack(
+                self.mode["id"],
+                get_minecraft_dir(),
+                progress_callback=self._on_install_progress,
+            )
+            if not ok:
+                self.after(0, self._on_error, err)
+                return
+
+            # Step 4 — launch (automatically uses Forge version)
             self.after(0, self._show_status, "Launching game...")
             ok, msg = launch_version(self.username)
 
