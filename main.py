@@ -1,15 +1,19 @@
 """Minecraft Launcher - Main entry point.
 
 A simple Minecraft launcher with user authentication and a Tkinter GUI.
+Supports persistent login (auto-login), version selection, and threaded launching.
 """
 
 import tkinter as tk
+from auth.session import load_session
+from auth.database import user_exists
 from ui.login import LoginScreen
 from ui.register import RegisterScreen
 from ui.launcher import LauncherScreen
+from ui.components import BG_DARK
 
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 500
+WINDOW_WIDTH = 420
+WINDOW_HEIGHT = 520
 
 
 class MinecraftLauncher(tk.Tk):
@@ -20,10 +24,22 @@ class MinecraftLauncher(tk.Tk):
         self.title("Minecraft Launcher")
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.resizable(False, False)
-        self.configure(bg="#2b2b2b")
+        self.configure(bg=BG_DARK)
+
+        # Center the window on screen
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() - WINDOW_WIDTH) // 2
+        y = (self.winfo_screenheight() - WINDOW_HEIGHT) // 2
+        self.geometry(f"+{x}+{y}")
 
         self.current_frame = None
-        self._show_login()
+
+        # Auto-login: check for a saved session
+        saved_user = load_session()
+        if saved_user and user_exists(saved_user):
+            self._show_launcher(saved_user)
+        else:
+            self._show_login()
 
     def _clear_frame(self):
         """Remove the current screen."""

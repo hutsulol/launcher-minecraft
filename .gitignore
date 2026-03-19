@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 data/users.db
+data/session.json
 .env
 *.egg-info/
 dist/

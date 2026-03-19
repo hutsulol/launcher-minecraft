@@ -2,54 +2,66 @@
 
 import tkinter as tk
 from auth.auth_manager import register
+from ui.components import (
+    BG_DARK, FG_PRIMARY, FG_MUTED,
+    FONT_TITLE, FONT_HEADING, FONT_SMALL,
+    BTN_GREEN, BTN_GRAY,
+    make_label, make_entry, make_button, make_status_label,
+    show_status, make_separator,
+)
 
 
 class RegisterScreen(tk.Frame):
     """Registration form for new users."""
 
     def __init__(self, master, on_back_click):
-        super().__init__(master)
+        super().__init__(master, bg=BG_DARK)
         self.on_back_click = on_back_click
         self._build_ui()
 
     def _build_ui(self):
-        self.configure(bg="#2b2b2b")
+        # -- Title --
+        make_label(
+            self, text="⛏  Minecraft Launcher", font=FONT_TITLE, fg=FG_PRIMARY
+        ).pack(pady=(30, 5))
 
-        tk.Label(
-            self, text="Create Account", font=("Arial", 16, "bold"),
-            fg="white", bg="#2b2b2b"
-        ).pack(pady=(40, 20))
+        make_separator(self).pack(pady=8)
 
-        # Username
-        tk.Label(self, text="Username", fg="white", bg="#2b2b2b").pack()
-        self.username_entry = tk.Entry(self, width=30)
-        self.username_entry.pack(pady=5)
+        make_label(
+            self, text="Create Account", font=FONT_HEADING
+        ).pack(pady=(5, 15))
 
-        # Password
-        tk.Label(self, text="Password", fg="white", bg="#2b2b2b").pack()
-        self.password_entry = tk.Entry(self, width=30, show="*")
-        self.password_entry.pack(pady=5)
+        # -- Username --
+        make_label(self, text="Username", fg=FG_MUTED, font=FONT_SMALL).pack(anchor="center")
+        self.username_entry = make_entry(self)
+        self.username_entry.pack(pady=(2, 8))
+        self.username_entry.focus_set()
 
-        # Confirm password
-        tk.Label(self, text="Confirm Password", fg="white", bg="#2b2b2b").pack()
-        self.confirm_entry = tk.Entry(self, width=30, show="*")
-        self.confirm_entry.pack(pady=5)
+        # -- Password --
+        make_label(self, text="Password", fg=FG_MUTED, font=FONT_SMALL).pack(anchor="center")
+        self.password_entry = make_entry(self, show="*")
+        self.password_entry.pack(pady=(2, 8))
 
-        # Status label
-        self.status_label = tk.Label(
-            self, text="", fg="red", bg="#2b2b2b", wraplength=250
-        )
+        # -- Confirm password --
+        make_label(self, text="Confirm Password", fg=FG_MUTED, font=FONT_SMALL).pack(anchor="center")
+        self.confirm_entry = make_entry(self, show="*")
+        self.confirm_entry.pack(pady=(2, 8))
+
+        # Bind Enter key
+        self.confirm_entry.bind("<Return>", lambda e: self._handle_register())
+
+        # -- Status --
+        self.status_label = make_status_label(self)
         self.status_label.pack(pady=5)
 
-        # Buttons
-        tk.Button(
-            self, text="Register", width=20, command=self._handle_register,
-            bg="#4CAF50", fg="white"
-        ).pack(pady=5)
+        # -- Buttons --
+        make_button(
+            self, text="Register", command=self._handle_register, bg=BTN_GREEN
+        ).pack(pady=(5, 5))
 
-        tk.Button(
-            self, text="Back to Login", width=20,
-            command=self.on_back_click, bg="#555555", fg="white"
+        make_button(
+            self, text="Back to Login", command=self.on_back_click,
+            bg=BTN_GRAY, font=FONT_SMALL, width=18,
         ).pack(pady=5)
 
     def _handle_register(self):
@@ -58,11 +70,8 @@ class RegisterScreen(tk.Frame):
         confirm = self.confirm_entry.get()
 
         if password != confirm:
-            self.status_label.config(text="Passwords do not match.", fg="red")
+            show_status(self.status_label, "Passwords do not match.", is_error=True)
             return
 
         success, message = register(username, password)
-        if success:
-            self.status_label.config(text=message, fg="#55ff55")
-        else:
-            self.status_label.config(text=message, fg="red")
+        show_status(self.status_label, message, is_error=not success)

@@ -5,8 +5,11 @@ A simple Minecraft launcher built with Python and Tkinter.
 ## Features
 
 - **User Authentication** – Register and log in with hashed passwords (SHA-256) stored in SQLite.
-- **Clean UI** – Login, registration, and launcher screens built with Tkinter.
-- **Launch Minecraft** – Start Minecraft Java Edition in offline mode with your username.
+- **Persistent Login** – Remembers your last session; skip the login screen on next launch.
+- **Version Selector** – Choose between Minecraft versions (1.20.4, 1.20.1, 1.19.4, 1.18.2).
+- **Threaded Launching** – Progress feedback while launching; UI never freezes.
+- **Clean UI** – Consistent dark theme with reusable components.
+- **Error Handling** – Clear error messages for login failures, duplicate users, and launch issues.
 
 ## Project Structure
 
@@ -14,16 +17,19 @@ A simple Minecraft launcher built with Python and Tkinter.
 minecraft-launcher/
 ├── main.py                  # Application entry point
 ├── ui/
+│   ├── components.py        # Reusable UI components & theme
 │   ├── login.py             # Login screen
 │   ├── register.py          # Registration screen
 │   └── launcher.py          # Main launcher screen
 ├── auth/
 │   ├── auth_manager.py      # Registration & login logic
+│   ├── session.py           # Persistent login (auto-login)
 │   └── database.py          # SQLite user storage
 ├── launcher/
 │   └── minecraft_runner.py  # Minecraft launch logic
 ├── data/
-│   └── users.db             # Created automatically
+│   ├── users.db             # Created automatically
+│   └── session.json         # Created automatically
 ├── requirements.txt
 └── README.md
 ```
@@ -56,8 +62,10 @@ minecraft-launcher/
 ## How It Works
 
 1. Register a new account or log in with existing credentials.
-2. Click **PLAY** to launch Minecraft with your username (offline mode).
-3. The launcher uses `minecraft-launcher-lib` if available, otherwise attempts to open the system Minecraft launcher.
+2. On next launch, you are automatically logged in (persistent session).
+3. Select a Minecraft version from the dropdown.
+4. Click **PLAY** – a progress indicator shows launch stages without freezing the UI.
+5. Click **Logout** to clear your session and return to the login screen.
 
 ## Security
 

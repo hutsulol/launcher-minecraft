@@ -2,56 +2,62 @@
 
 import tkinter as tk
 from auth.auth_manager import login
+from ui.components import (
+    BG_DARK, FG_PRIMARY, FG_MUTED,
+    FONT_TITLE, FONT_HEADING, FONT_SMALL,
+    BTN_GREEN, BTN_GRAY,
+    make_label, make_entry, make_button, make_status_label,
+    show_status, make_separator,
+)
 
 
 class LoginScreen(tk.Frame):
     """Login form that authenticates existing users."""
 
     def __init__(self, master, on_register_click, on_login_success):
-        super().__init__(master)
+        super().__init__(master, bg=BG_DARK)
         self.on_register_click = on_register_click
         self.on_login_success = on_login_success
         self._build_ui()
 
     def _build_ui(self):
-        self.configure(bg="#2b2b2b")
+        # -- Title --
+        make_label(
+            self, text="⛏  Minecraft Launcher", font=FONT_TITLE, fg=FG_PRIMARY
+        ).pack(pady=(40, 5))
 
-        # Title
-        tk.Label(
-            self, text="Minecraft Launcher", font=("Arial", 20, "bold"),
-            fg="#55ff55", bg="#2b2b2b"
-        ).pack(pady=(40, 20))
+        make_separator(self).pack(pady=8)
 
-        tk.Label(
-            self, text="Login", font=("Arial", 14),
-            fg="white", bg="#2b2b2b"
-        ).pack(pady=(0, 10))
+        make_label(
+            self, text="Sign In", font=FONT_HEADING
+        ).pack(pady=(5, 15))
 
-        # Username
-        tk.Label(self, text="Username", fg="white", bg="#2b2b2b").pack()
-        self.username_entry = tk.Entry(self, width=30)
-        self.username_entry.pack(pady=5)
+        # -- Username --
+        make_label(self, text="Username", fg=FG_MUTED, font=FONT_SMALL).pack(anchor="center")
+        self.username_entry = make_entry(self)
+        self.username_entry.pack(pady=(2, 10))
+        self.username_entry.focus_set()
 
-        # Password
-        tk.Label(self, text="Password", fg="white", bg="#2b2b2b").pack()
-        self.password_entry = tk.Entry(self, width=30, show="*")
-        self.password_entry.pack(pady=5)
+        # -- Password --
+        make_label(self, text="Password", fg=FG_MUTED, font=FONT_SMALL).pack(anchor="center")
+        self.password_entry = make_entry(self, show="*")
+        self.password_entry.pack(pady=(2, 10))
 
-        # Status label for error/success messages
-        self.status_label = tk.Label(
-            self, text="", fg="red", bg="#2b2b2b", wraplength=250
-        )
+        # Bind Enter key to login
+        self.password_entry.bind("<Return>", lambda e: self._handle_login())
+
+        # -- Status message --
+        self.status_label = make_status_label(self)
         self.status_label.pack(pady=5)
 
-        # Buttons
-        tk.Button(
-            self, text="Login", width=20, command=self._handle_login,
-            bg="#4CAF50", fg="white"
-        ).pack(pady=5)
+        # -- Buttons --
+        make_button(
+            self, text="Login", command=self._handle_login, bg=BTN_GREEN
+        ).pack(pady=(5, 5))
 
-        tk.Button(
-            self, text="Create Account", width=20,
-            command=self.on_register_click, bg="#555555", fg="white"
+        make_button(
+            self, text="Create Account", command=self.on_register_click,
+            bg=BTN_GRAY, font=FONT_SMALL, width=18,
         ).pack(pady=5)
 
     def _handle_login(self):
@@ -60,7 +66,7 @@ class LoginScreen(tk.Frame):
         success, message = login(username, password)
 
         if success:
-            self.status_label.config(text=message, fg="#55ff55")
+            show_status(self.status_label, message)
             self.on_login_success(username)
         else:
-            self.status_label.config(text=message, fg="red")
+            show_status(self.status_label, message, is_error=True)
