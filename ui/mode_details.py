@@ -363,7 +363,7 @@ class ModeDetailsScreen(tk.Frame):
         self.detail_label.pack(anchor="w")
 
         self.progress_bar = ttk.Progressbar(
-            parent, mode="determinate", length=220,
+            parent, mode="determinate", length=220, maximum=100,
         )
 
     def _play_hover(self, entering):
@@ -382,6 +382,7 @@ class ModeDetailsScreen(tk.Frame):
 
         self.progress_bar.pack(anchor="w", pady=(4, 0))
         self.progress_bar["value"] = 0
+        self.progress_bar.update_idletasks()
         self._progress_max = 0
         self._progress_current = 0
 
@@ -432,10 +433,13 @@ class ModeDetailsScreen(tk.Frame):
         self.after(0, self._update_install_ui, stage, pct, detail)
 
     def _update_install_ui(self, stage, pct, detail):
+        """Update progress bar and labels. Runs on main thread via after()."""
         if stage:
             self.status_label.config(text=stage, fg=FG_SUCCESS)
         self.progress_bar["value"] = pct
         self.detail_label.config(text=detail)
+        # Force Tkinter to repaint the progress bar immediately
+        self.progress_bar.update_idletasks()
 
     def _show_status(self, text):
         self.status_label.config(text=text, fg=FG_SUCCESS)
@@ -443,12 +447,14 @@ class ModeDetailsScreen(tk.Frame):
 
     def _on_launch_success(self, message):
         self.progress_bar["value"] = 100
+        self.progress_bar.update_idletasks()
         self.status_label.config(text=message, fg=FG_SUCCESS)
         self.detail_label.config(text="")
         self.after(2500, self._reset_ui)
 
     def _on_error(self, message):
         self.progress_bar["value"] = 0
+        self.progress_bar.update_idletasks()
         self.status_label.config(text=message, fg=FG_ERROR)
         self.detail_label.config(text="")
         self._reset_ui()

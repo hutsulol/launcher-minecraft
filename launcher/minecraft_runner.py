@@ -52,10 +52,12 @@ def install_version(progress_callback=None, minecraft_dir=None):
             "Run: pip install minecraft-launcher-lib"
         )
 
-    # Build the callback dict that minecraft-launcher-lib expects
+    # Build the callback dict that minecraft-launcher-lib expects.
+    # Each callback only passes the value it owns — None for the others
+    # so the UI handler knows which field actually changed.
     callback = {}
     if progress_callback:
-        callback["setStatus"] = lambda text: progress_callback(text, 0, 0)
+        callback["setStatus"] = lambda text: progress_callback(text, None, None)
         callback["setProgress"] = lambda value: progress_callback(None, value, None)
         callback["setMax"] = lambda value: progress_callback(None, None, value)
 
