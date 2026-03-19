@@ -1,7 +1,7 @@
-"""Main launcher screen — pirate-themed 16:9 layout for Lungi Launcher.
+"""Main launcher screen — modern game-style layout for Lungi Launcher.
 
-Displays the banner and mode cards. Clicking a card navigates to the
-ModeDetailsScreen (handled by the parent via on_mode_select callback).
+Displays an image banner and animated image-based mode cards.
+Clicking a card navigates to the ModeDetailsScreen.
 """
 
 import tkinter as tk
@@ -18,7 +18,7 @@ from ui.components.card import ServerCard
 
 
 class LauncherScreen(tk.Frame):
-    """Main menu: top bar, banner, mode card grid.
+    """Main menu: top bar, image banner, animated card grid.
 
     Clicking a card calls on_mode_select(mode_data) so the parent can
     navigate to the ModeDetailsScreen.
@@ -59,7 +59,7 @@ class LauncherScreen(tk.Frame):
         body = tk.Frame(self, bg=BG_DEEP)
         body.pack(fill="both", expand=True)
 
-        # Banner (data-driven)
+        # Banner (image-based, data-driven)
         banner_data = self._data.get("banner")
         self.banner = Banner(body, data=banner_data)
         self.banner.pack(padx=20, pady=(15, 5))
@@ -67,27 +67,32 @@ class LauncherScreen(tk.Frame):
         # Mode cards
         self._build_card_section(body)
 
-        # Hint text at the bottom
-        tk.Label(
-            body, text="Click a mode to see details and play",
-            font=("Arial", 9), fg=FG_MUTED, bg=BG_DEEP,
-        ).pack(pady=(15, 10))
+        # Hint (Canvas-drawn for visual consistency)
+        hint = tk.Canvas(body, height=30, bg=BG_DEEP, highlightthickness=0, bd=0)
+        hint.pack(fill="x", pady=(10, 5))
+        hint.create_text(
+            500, 15, text="Click a mode to see details and play",
+            font=("Arial", 9), fill=FG_MUTED,
+        )
 
     # ------------------------------------------------------------------
     # Mode cards
     # ------------------------------------------------------------------
 
     def _build_card_section(self, parent):
-        """Build the mode card grid from loaded data."""
-        section_header = tk.Frame(parent, bg=BG_DEEP)
-        section_header.pack(fill="x", padx=30, pady=(12, 5))
-        tk.Label(
-            section_header, text="\u2694  Choose Your Adventure",
-            font=FONT_HEADING, fg=FG_TEXT, bg=BG_DEEP,
-        ).pack(side="left")
+        """Build the animated card grid from loaded data."""
+        # Section header drawn on Canvas
+        header_canvas = tk.Canvas(
+            parent, height=30, bg=BG_DEEP, highlightthickness=0, bd=0,
+        )
+        header_canvas.pack(fill="x", padx=30, pady=(12, 2))
+        header_canvas.create_text(
+            5, 15, text="\u2694  Choose Your Adventure",
+            font=FONT_HEADING, fill=FG_TEXT, anchor="w",
+        )
 
         card_frame = tk.Frame(parent, bg=BG_DEEP)
-        card_frame.pack(padx=20, pady=5)
+        card_frame.pack(padx=10, pady=0)
 
         self.card_widgets = []
         for i, mode in enumerate(self._modes):
@@ -96,15 +101,13 @@ class LauncherScreen(tk.Frame):
                 on_select=self._on_card_click,
                 is_selected=False,
             )
-            card.grid(row=0, column=i, padx=CARD_PAD, pady=5)
+            card.grid(row=0, column=i, padx=CARD_PAD // 2, pady=0)
             self.card_widgets.append(card)
 
     def _on_card_click(self, mode_data):
         """Navigate to the mode details screen."""
-        # Briefly highlight the clicked card
         for card in self.card_widgets:
             card.set_selected(card.server_data["title"] == mode_data["title"])
-        # Let the parent handle navigation
         self.on_mode_select(mode_data)
 
     # ------------------------------------------------------------------
