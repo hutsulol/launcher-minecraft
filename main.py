@@ -1,7 +1,7 @@
-"""Minecraft Launcher - Main entry point.
+"""Lungi Launcher — Main entry point.
 
-A simple Minecraft launcher with user authentication and a Tkinter GUI.
-Supports persistent login (auto-login), version selection, and threaded launching.
+A pirate-themed Minecraft launcher with user authentication,
+server cards, version selection, and threaded install/launch.
 """
 
 import tkinter as tk
@@ -10,31 +10,28 @@ from auth.database import user_exists
 from ui.login import LoginScreen
 from ui.register import RegisterScreen
 from ui.launcher import LauncherScreen
-from ui.components import BG_DARK
-
-WINDOW_WIDTH = 420
-WINDOW_HEIGHT = 520
+from ui.theme import BG_DEEP, WIN_WIDTH, WIN_HEIGHT
 
 
-class MinecraftLauncher(tk.Tk):
-    """Root application that manages screen navigation."""
+class LungiLauncher(tk.Tk):
+    """Root application — manages screen navigation and 16:9 window."""
 
     def __init__(self):
         super().__init__()
-        self.title("Minecraft Launcher")
-        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        self.title("Lungi Launcher")
+        self.geometry(f"{WIN_WIDTH}x{WIN_HEIGHT}")
         self.resizable(False, False)
-        self.configure(bg=BG_DARK)
+        self.configure(bg=BG_DEEP)
 
-        # Center the window on screen
+        # Center window on screen
         self.update_idletasks()
-        x = (self.winfo_screenwidth() - WINDOW_WIDTH) // 2
-        y = (self.winfo_screenheight() - WINDOW_HEIGHT) // 2
+        x = (self.winfo_screenwidth() - WIN_WIDTH) // 2
+        y = (self.winfo_screenheight() - WIN_HEIGHT) // 2
         self.geometry(f"+{x}+{y}")
 
         self.current_frame = None
 
-        # Auto-login: check for a saved session
+        # Auto-login if session exists
         saved_user = load_session()
         if saved_user and user_exists(saved_user):
             self._show_launcher(saved_user)
@@ -66,7 +63,7 @@ class MinecraftLauncher(tk.Tk):
         self.current_frame.pack(fill="both", expand=True)
 
     def _show_launcher(self, username):
-        """Display the main launcher screen after login."""
+        """Display the main launcher screen."""
         self._clear_frame()
         self.current_frame = LauncherScreen(
             self,
@@ -77,5 +74,5 @@ class MinecraftLauncher(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = MinecraftLauncher()
+    app = LungiLauncher()
     app.mainloop()

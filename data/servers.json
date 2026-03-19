@@ -1,0 +1,28 @@
+{
+    "banner": {
+        "title": "\u2620  New Season Available",
+        "subtitle": "Sail into Adventure \u2014 Explore new waters, find buried treasure",
+        "icon": "\u2693",
+        "badge": "NEW"
+    },
+    "servers": [
+        {
+            "title": "Pirate RPG",
+            "desc": "Open-world pirate adventure",
+            "icon": "\u2694",
+            "players": 1284
+        },
+        {
+            "title": "Treasure Islands",
+            "desc": "Explore and loot hidden islands",
+            "icon": "\u26f5",
+            "players": 873
+        },
+        {
+            "title": "PvP Seas",
+            "desc": "Ship battles and naval warfare",
+            "icon": "\u2693",
+            "players": 2041
+        }
+    ]
+}
