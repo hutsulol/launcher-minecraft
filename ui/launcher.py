@@ -4,12 +4,13 @@ Displays an image banner and animated image-based mode cards.
 Clicking a card navigates to the ModeDetailsScreen.
 """
 
+import traceback
 import tkinter as tk
 
 from auth.session import save_session, clear_session
 from data.loader import load_launcher_data
 from ui.theme import (
-    BG_DEEP, GOLD, GOLD_DIM, FG_TEXT, FG_MUTED,
+    BG_DEEP, GOLD, GOLD_DIM, FG_TEXT, FG_MUTED, FG_ERROR,
     FONT_HEADING, CARD_PAD,
 )
 from ui.components.topbar import TopBar
@@ -59,15 +60,29 @@ class LauncherScreen(tk.Frame):
         body = tk.Frame(self, bg=BG_DEEP)
         body.pack(fill="both", expand=True)
 
-        # Banner (image-based, data-driven)
-        banner_data = self._data.get("banner")
-        self.banner = Banner(body, data=banner_data)
-        self.banner.pack(padx=20, pady=(15, 5))
+        # Banner (image-based, data-driven) — wrapped for safety
+        try:
+            banner_data = self._data.get("banner")
+            self.banner = Banner(body, data=banner_data)
+            self.banner.pack(padx=20, pady=(15, 5))
+        except Exception as exc:
+            print(f"[Launcher] Banner failed: {exc}")
+            traceback.print_exc()
+            err = tk.Label(body, text="Banner failed to load",
+                           fg=FG_ERROR, bg=BG_DEEP, font=("Arial", 10))
+            err.pack(pady=10)
 
-        # Mode cards
-        self._build_card_section(body)
+        # Mode cards — wrapped for safety
+        try:
+            self._build_card_section(body)
+        except Exception as exc:
+            print(f"[Launcher] Cards failed: {exc}")
+            traceback.print_exc()
+            err = tk.Label(body, text="Cards failed to load",
+                           fg=FG_ERROR, bg=BG_DEEP, font=("Arial", 10))
+            err.pack(pady=10)
 
-        # Hint (Canvas-drawn for visual consistency)
+        # Hint
         hint = tk.Canvas(body, height=30, bg=BG_DEEP, highlightthickness=0, bd=0)
         hint.pack(fill="x", pady=(10, 5))
         hint.create_text(
@@ -81,7 +96,6 @@ class LauncherScreen(tk.Frame):
 
     def _build_card_section(self, parent):
         """Build the animated card grid from loaded data."""
-        # Section header drawn on Canvas
         header_canvas = tk.Canvas(
             parent, height=30, bg=BG_DEEP, highlightthickness=0, bd=0,
         )
@@ -96,13 +110,27 @@ class LauncherScreen(tk.Frame):
 
         self.card_widgets = []
         for i, mode in enumerate(self._modes):
-            card = ServerCard(
-                card_frame, mode,
-                on_select=self._on_card_click,
-                is_selected=False,
-            )
-            card.grid(row=0, column=i, padx=CARD_PAD // 2, pady=0)
-            self.card_widgets.append(card)
+            try:
+                card = ServerCard(
+                    card_frame, mode,
+                    on_select=self._on_card_click,
+                    is_selected=False,
+                )
+                card.grid(row=0, column=i, padx=CARD_PAD // 2, pady=0)
+                self.card_widgets.append(card)
+            except Exception as exc:
+                print(f"[Launcher] Card '{mode.get('title', '?')}' failed: {exc}")
+                traceback.print_exc()
+                # Fallback: plain label
+                fallback = tk.Label(
+                    card_frame,
+                    text=mode.get("title", "Mode"),
+                    fg=FG_TEXT, bg="#1e293b", font=("Arial", 12),
+                    width=20, height=8,
+                )
+                fallback.grid(row=0, column=i, padx=CARD_PAD // 2, pady=0)
+                fallback.bind("<Button-1>",
+                              lambda e, m=mode: self._on_card_click(m))
 
     def _on_card_click(self, mode_data):
         """Navigate to the mode details screen."""

@@ -1,10 +1,11 @@
 """Image-based banner component for Lungi Launcher.
 
 Loads a PNG background from assets/banner.png, draws text on top.
-Falls back to a gradient if the image is missing.
+Falls back to a solid color if the image is missing.
 """
 
 import os
+import sys
 import tkinter as tk
 
 from PIL import Image, ImageTk, ImageEnhance
@@ -15,7 +16,13 @@ from ui.theme import (
     WIN_WIDTH,
 )
 
-BANNER_IMAGE_PATH = "assets/banner.png"
+DEBUG = ("--debug" in sys.argv)
+
+# Resolve project root (two levels up from this file)
+_PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+BANNER_IMAGE_PATH = os.path.join(_PROJECT_ROOT, "assets", "banner.png")
 
 DEFAULT_BANNER = {
     "title": "\u2620  New Season Available",
@@ -37,27 +44,45 @@ class Banner(tk.Canvas):
         )
         self._data = data or DEFAULT_BANNER
 
-        # Image references (prevent GC)
-        self._bg_photo = None
+        # Image references — stored on self to prevent GC
+        self._src_image = None
+        self._bg_photo_normal = None
+        self._bg_photo_hover = None
+        self._image_loaded = False
+
         self._load_image()
+        self._hovered = False
         self._draw()
 
-        # Subtle hover effect
-        self._hovered = False
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
 
     def _load_image(self):
         """Load and resize the banner background image."""
         w, h = self._banner_w, self._banner_h
-        if os.path.isfile(BANNER_IMAGE_PATH):
-            img = Image.open(BANNER_IMAGE_PATH).convert("RGB")
-            img = img.resize((w, h), Image.LANCZOS)
-        else:
-            # Fallback gradient
+        try:
+            if os.path.isfile(BANNER_IMAGE_PATH):
+                img = Image.open(BANNER_IMAGE_PATH).convert("RGB")
+                img = img.resize((w, h), Image.LANCZOS)
+                self._image_loaded = True
+                if DEBUG:
+                    print(f"[Banner] Loaded: {BANNER_IMAGE_PATH}")
+            else:
+                if DEBUG:
+                    print(f"[Banner] Not found: {BANNER_IMAGE_PATH}, using fallback")
+                img = Image.new("RGB", (w, h), (12, 26, 61))
+        except Exception as exc:
+            print(f"[Banner] ERROR loading image: {exc}")
             img = Image.new("RGB", (w, h), (12, 26, 61))
+
         self._src_image = img
-        self._bg_photo = ImageTk.PhotoImage(img)
+        # Pre-build both normal and hover photos once (avoids re-creating on every draw)
+        self._bg_photo_normal = ImageTk.PhotoImage(img)
+        try:
+            enhanced = ImageEnhance.Brightness(img).enhance(1.15)
+            self._bg_photo_hover = ImageTk.PhotoImage(enhanced)
+        except Exception:
+            self._bg_photo_hover = self._bg_photo_normal
 
     def update_data(self, data):
         """Replace banner content and redraw."""
@@ -70,17 +95,16 @@ class Banner(tk.Canvas):
         h = self._banner_h
         d = self._data
 
-        # Background image
-        if self._hovered and self._src_image:
-            enhanced = ImageEnhance.Brightness(self._src_image).enhance(1.15)
-            self._bg_photo = ImageTk.PhotoImage(enhanced)
-        elif self._src_image:
-            self._bg_photo = ImageTk.PhotoImage(self._src_image)
-
-        self.create_image(0, 0, image=self._bg_photo, anchor="nw")
+        # Background image — use pre-built photo (no new allocations)
+        photo = self._bg_photo_hover if self._hovered else self._bg_photo_normal
+        if photo:
+            self.create_image(0, 0, image=photo, anchor="nw")
+        else:
+            # Ultimate fallback: solid rectangle
+            self.create_rectangle(0, 0, w, h, fill="#0c1a3d", outline="")
 
         # Border
-        border_color = GOLD_DIM if not self._hovered else GOLD
+        border_color = GOLD if self._hovered else GOLD_DIM
         self.create_rectangle(1, 1, w - 1, h - 1, outline=border_color, width=1)
 
         # Left icon
@@ -109,7 +133,6 @@ class Banner(tk.Canvas):
         badge = d.get("badge")
         if badge:
             bx = w - 60
-            # Badge background rectangle
             self.create_rectangle(bx - 22, 14, bx + 22, 36, fill=GOLD, outline="")
             self.create_text(bx, 25, text=badge,
                              font=("Arial", 10, "bold"), fill="#020617")

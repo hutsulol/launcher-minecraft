@@ -6,25 +6,39 @@ Fully data-driven — no hardcoded content.
 """
 
 import os
+import sys
 import tkinter as tk
 
-from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+from PIL import Image, ImageTk, ImageEnhance
 
 from ui.theme import (
-    GOLD, GOLD_DIM, FG_TEXT, FG_MUTED,
+    GOLD, GOLD_DIM, FG_TEXT, FG_MUTED, BG_CARD,
     FONT_CARD_TITLE, FONT_CARD_SUB, FONT_TINY,
-    CARD_WIDTH, CARD_HEIGHT, BG_DEEP,
+    CARD_WIDTH, CARD_HEIGHT,
 )
 
+# Toggle for console debug output
+DEBUG = ("--debug" in sys.argv)
+
 # Animation config
-ANIM_DURATION_MS = 150       # total transition time
-ANIM_STEP_MS = 16            # ~60 fps
+ANIM_DURATION_MS = 150
+ANIM_STEP_MS = 16
 SCALE_NORMAL = 1.0
 SCALE_HOVER = 1.05
-OVERLAY_NORMAL = 0.35        # dark overlay opacity (0-1)
-OVERLAY_HOVER = 0.15         # lighter on hover to reveal image
+OVERLAY_NORMAL = 0.35
+OVERLAY_HOVER = 0.15
 GLOW_COLORS = ["#facc15", "#e6b800", "#cca300", "#b38f00"]
-PARALLAX_PX = 4              # max pixel shift on mouse move
+PARALLAX_PX = 4
+
+# Resolve project root once (directory containing main.py)
+_PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+
+def _resolve_asset(relative_path):
+    """Resolve a relative asset path against the project root."""
+    return os.path.join(_PROJECT_ROOT, relative_path)
 
 
 class ServerCard(tk.Canvas):
@@ -35,7 +49,6 @@ class ServerCard(tk.Canvas):
     """
 
     def __init__(self, master, server_data, on_select, is_selected=False):
-        # Allocate extra canvas space for scale-up + glow
         self._pad = 10
         cw = CARD_WIDTH + self._pad * 2
         ch = CARD_HEIGHT + self._pad * 2
@@ -48,17 +61,19 @@ class ServerCard(tk.Canvas):
         self.is_selected = is_selected
 
         # Animation state
-        self._hover_t = 0.0          # 0 = normal, 1 = fully hovered
+        self._hover_t = 0.0
         self._target_t = 0.0
         self._anim_id = None
-        self._glow_phase = 0         # for cycling glow
+        self._glow_phase = 0
         self._glow_id = None
         self._mouse_x = CARD_WIDTH // 2
         self._mouse_y = CARD_HEIGHT // 2
 
-        # Image caches (prevent GC)
-        self._src_image = None       # PIL Image (original size)
-        self._photo_cache = {}       # scale -> ImageTk.PhotoImage
+        # Image references — stored on self to prevent GC
+        self._src_image = None          # PIL Image (original)
+        self._current_photo = None      # the ACTIVE ImageTk on canvas
+        self._photo_cache = {}          # (scale, overlay) -> ImageTk
+        self._image_loaded = False      # True if a real PNG was loaded
 
         self._load_source_image()
         self._draw()
@@ -73,41 +88,68 @@ class ServerCard(tk.Canvas):
     # ------------------------------------------------------------------
 
     def _load_source_image(self):
-        """Load the source PNG into a PIL Image."""
-        path = self.server_data.get("image", "")
-        if path and os.path.isfile(path):
-            self._src_image = Image.open(path).convert("RGB")
-        else:
-            self._src_image = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), (30, 41, 59))
+        """Load the source PNG into a PIL Image, with robust fallback."""
+        raw_path = self.server_data.get("image", "")
+        abs_path = _resolve_asset(raw_path) if raw_path else ""
+
+        try:
+            if abs_path and os.path.isfile(abs_path):
+                self._src_image = Image.open(abs_path).convert("RGB")
+                self._image_loaded = True
+                if DEBUG:
+                    print(f"[Card] Loaded image: {abs_path}")
+            else:
+                if DEBUG:
+                    print(f"[Card] Image not found: {abs_path!r}, using fallback")
+                self._src_image = self._make_fallback_image()
+        except Exception as exc:
+            print(f"[Card] ERROR loading {abs_path!r}: {exc}")
+            self._src_image = self._make_fallback_image()
+
+    @staticmethod
+    def _make_fallback_image():
+        """Create a solid placeholder image when PNG is missing."""
+        img = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), (30, 41, 59))
+        return img
 
     def _get_photo(self, scale, overlay_alpha):
-        """Build a scaled + overlaid PhotoImage, with caching by rounded params."""
-        # Round to avoid too many cache entries
-        s_key = round(scale, 3)
+        """Build a scaled + overlaid PhotoImage with caching."""
+        s_key = round(scale, 2)
         a_key = round(overlay_alpha, 2)
         key = (s_key, a_key)
         if key in self._photo_cache:
             return self._photo_cache[key]
 
-        w = int(CARD_WIDTH * scale)
-        h = int(CARD_HEIGHT * scale)
-        img = self._src_image.resize((w, h), Image.LANCZOS)
+        try:
+            w = int(CARD_WIDTH * scale)
+            h = int(CARD_HEIGHT * scale)
+            img = self._src_image.resize((w, h), Image.LANCZOS)
 
-        # Apply dark overlay by blending with black
-        if overlay_alpha > 0:
-            dark = Image.new("RGB", (w, h), (0, 0, 0))
-            img = Image.blend(img, dark, overlay_alpha)
+            if overlay_alpha > 0:
+                dark = Image.new("RGB", (w, h), (0, 0, 0))
+                img = Image.blend(img, dark, overlay_alpha)
 
-        # Slight brightness boost on hover
-        if scale > 1.01:
-            enhancer = ImageEnhance.Brightness(img)
-            img = enhancer.enhance(1.0 + (scale - 1.0) * 2)
+            if scale > 1.01:
+                enhancer = ImageEnhance.Brightness(img)
+                img = enhancer.enhance(1.0 + (scale - 1.0) * 2)
 
-        photo = ImageTk.PhotoImage(img)
+            photo = ImageTk.PhotoImage(img)
+        except Exception as exc:
+            print(f"[Card] ERROR building photo: {exc}")
+            fallback = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), (30, 41, 59))
+            photo = ImageTk.PhotoImage(fallback)
 
-        # Keep cache bounded
-        if len(self._photo_cache) > 20:
-            self._photo_cache.clear()
+        # Bounded cache — but NEVER clear the current display photo
+        if len(self._photo_cache) > 30:
+            # Keep only the current key + this new one
+            keep = {}
+            if self._current_photo is not None:
+                for k, v in self._photo_cache.items():
+                    if v is self._current_photo:
+                        keep[k] = v
+                        break
+            self._photo_cache = keep
+
         self._photo_cache[key] = photo
         return photo
 
@@ -120,27 +162,42 @@ class ServerCard(tk.Canvas):
         self.delete("all")
         t = self._hover_t
         pad = self._pad
+        w, h = CARD_WIDTH, CARD_HEIGHT
 
         # Interpolate values
         scale = SCALE_NORMAL + (SCALE_HOVER - SCALE_NORMAL) * t
         overlay = OVERLAY_NORMAL + (OVERLAY_HOVER - OVERLAY_NORMAL) * t
 
-        # Parallax offset based on mouse position
-        px = (self._mouse_x / CARD_WIDTH - 0.5) * PARALLAX_PX * t
-        py = (self._mouse_y / CARD_HEIGHT - 0.5) * PARALLAX_PX * t
+        # Parallax offset
+        px = (self._mouse_x / w - 0.5) * PARALLAX_PX * t
+        py = (self._mouse_y / h - 0.5) * PARALLAX_PX * t
 
-        # Scaled image dimensions
-        sw = int(CARD_WIDTH * scale)
-        sh = int(CARD_HEIGHT * scale)
+        sw = int(w * scale)
+        sh = int(h * scale)
+        cx = pad + w // 2 + int(px)
+        cy = pad + h // 2 + int(py)
 
-        # Center the scaled image in the padded canvas
-        cx = pad + CARD_WIDTH // 2 + int(px)
-        cy = pad + CARD_HEIGHT // 2 + int(py)
+        # Background image
+        try:
+            photo = self._get_photo(scale, overlay)
+            self._current_photo = photo   # prevent GC
+            self.create_image(cx, cy, image=photo, anchor="center")
+        except Exception as exc:
+            # Ultimate fallback: draw a colored rectangle
+            print(f"[Card] draw fallback: {exc}")
+            self.create_rectangle(
+                pad, pad, pad + w, pad + h,
+                fill=BG_CARD, outline=GOLD_DIM, width=1,
+            )
 
-        photo = self._get_photo(scale, overlay)
-        self.create_image(cx, cy, image=photo, anchor="center")
+        # If no real image, draw "NO IMAGE" indicator
+        if not self._image_loaded:
+            self.create_text(
+                cx, cy - 15, text="NO IMAGE",
+                font=("Arial", 10), fill=FG_MUTED,
+            )
 
-        # Glow border (visible when hovered or selected)
+        # Glow border
         glow_alpha = t
         if self.is_selected:
             glow_alpha = 1.0
@@ -163,10 +220,9 @@ class ServerCard(tk.Canvas):
 
         # Text overlay (bottom area)
         d = self.server_data
-        text_x = pad + CARD_WIDTH // 2 + int(px)
-        base_y = pad + CARD_HEIGHT + int(py)
+        text_x = pad + w // 2 + int(px)
+        base_y = pad + h + int(py)
 
-        # Text shadow for readability
         shadow = "#000000"
         self.create_text(text_x + 1, base_y - 54, text=d.get("title", ""),
                          font=FONT_CARD_TITLE, fill=shadow)
