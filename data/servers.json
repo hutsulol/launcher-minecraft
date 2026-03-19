@@ -29,16 +29,7 @@
                 "Epic naval battle with cannons",
                 "Trading at the pirate port"
             ],
-            "mods": [
-                {
-                    "name": "lungi-core-1.0.jar",
-                    "url": "https://example.com/mods/lungi-core-1.0.jar"
-                },
-                {
-                    "name": "pirate-ships-1.2.jar",
-                    "url": "https://example.com/mods/pirate-ships-1.2.jar"
-                }
-            ]
+            "mods": []
         },
         {
             "id": "sea_battle",
@@ -84,12 +75,7 @@
                 "Racing to the treasure chest",
                 "Co-op dungeon exploration"
             ],
-            "mods": [
-                {
-                    "name": "treasure-islands-1.0.jar",
-                    "url": "https://example.com/mods/treasure-islands-1.0.jar"
-                }
-            ]
+            "mods": []
         }
     ]
 }

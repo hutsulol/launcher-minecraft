@@ -7,7 +7,7 @@ import threading
 from launcher.minecraft_runner import (
     is_version_installed, install_version, launch_version, VERSION,
 )
-from launcher.mod_manager import install_mods
+from launcher.mod_manager import install_mods  # noqa: F401 — future use
 from ui.theme import (
     BG_DEEP, BG_DARK, BG_CARD, BG_CARD_HOVER,
     GOLD, GOLD_DIM, EMERALD, EMERALD_HOVER,
@@ -393,9 +393,8 @@ class ModeDetailsScreen(tk.Frame):
         thread.start()
 
     def _install_and_launch(self):
-        """Worker thread: install Minecraft, install mods, then launch."""
+        """Worker thread: install if needed, then launch."""
         try:
-            # Step 1 — install Minecraft if needed
             self.after(0, self._show_status, "Checking installation...")
 
             if not is_version_installed():
@@ -408,18 +407,6 @@ class ModeDetailsScreen(tk.Frame):
                     return
                 self.after(0, self._show_status, "Installation complete!")
 
-            # Step 2 — install mods for this mode
-            mods = self.mode.get("mods", [])
-            if mods:
-                self.after(0, self._show_status, "Checking mods...")
-                ok, err = install_mods(
-                    mods, progress_callback=self._on_install_progress
-                )
-                if not ok:
-                    self.after(0, self._on_error, err)
-                    return
-
-            # Step 3 — launch the game
             self.after(0, self._show_status, "Launching game...")
             ok, msg = launch_version(self.username)
 
