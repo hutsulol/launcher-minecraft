@@ -1,11 +1,11 @@
-"""Module responsible for launching Minecraft Java Edition."""
+"""Module responsible for installing and launching Minecraft Java Edition."""
 
 import subprocess
 import os
 import platform
 
 
-def _find_minecraft_dir():
+def get_minecraft_dir():
     """Return the default .minecraft directory path for the current OS."""
     system = platform.system()
     if system == "Windows":
@@ -16,44 +16,86 @@ def _find_minecraft_dir():
         return os.path.expanduser("~/.minecraft")
 
 
-def launch_minecraft(username, version="1.20.4"):
-    """Launch Minecraft in offline mode with the given username.
+def is_version_installed(version, minecraft_dir=None):
+    """Check whether a Minecraft version is already installed locally."""
+    if minecraft_dir is None:
+        minecraft_dir = get_minecraft_dir()
+    try:
+        import minecraft_launcher_lib
+        installed = minecraft_launcher_lib.utils.get_installed_versions(minecraft_dir)
+        return version in [v["id"] for v in installed]
+    except ImportError:
+        return False
 
-    Attempts to use minecraft-launcher-lib if installed,
-    otherwise falls back to direct subprocess launch.
+
+def install_version(version, progress_callback=None, minecraft_dir=None):
+    """Install a Minecraft version using minecraft-launcher-lib.
+
+    progress_callback(stage, progress, max_progress):
+        stage       - string like "Installing Minecraft...", "Downloading libraries..."
+        progress    - current item count
+        max_progress - total item count (0 if unknown)
+
+    Returns (success, error_message) tuple.
+    """
+    if minecraft_dir is None:
+        minecraft_dir = get_minecraft_dir()
+
+    try:
+        import minecraft_launcher_lib
+    except ImportError:
+        return False, (
+            "minecraft-launcher-lib is not installed.\n"
+            "Run: pip install minecraft-launcher-lib"
+        )
+
+    # Build the callback dict that minecraft-launcher-lib expects
+    callback = {}
+    if progress_callback:
+        callback["setStatus"] = lambda text: progress_callback(text, 0, 0)
+        callback["setProgress"] = lambda value: progress_callback(None, value, None)
+        callback["setMax"] = lambda value: progress_callback(None, None, value)
+
+    try:
+        minecraft_launcher_lib.install.install_minecraft_version(
+            version, minecraft_dir, callback=callback
+        )
+        return True, ""
+    except Exception as e:
+        error_msg = str(e)
+        # Provide user-friendly messages for common errors
+        if "ConnectionError" in type(e).__name__ or "URLError" in type(e).__name__:
+            error_msg = "No internet connection. Check your network and try again."
+        elif "HTTPError" in type(e).__name__:
+            error_msg = f"Download failed: {error_msg}"
+        return False, f"Installation failed: {error_msg}"
+
+
+def launch_version(username, version, minecraft_dir=None):
+    """Launch an already-installed Minecraft version in offline mode.
 
     Returns (success, message) tuple.
     """
-    minecraft_dir = _find_minecraft_dir()
+    if minecraft_dir is None:
+        minecraft_dir = get_minecraft_dir()
 
-    # Try using minecraft-launcher-lib first
     try:
         import minecraft_launcher_lib
+    except ImportError:
+        return _fallback_launch(minecraft_dir, username)
 
-        # Check if the version is installed
-        installed = minecraft_launcher_lib.utils.get_installed_versions(minecraft_dir)
-        version_ids = [v["id"] for v in installed]
+    # Build launch options for offline mode
+    options = minecraft_launcher_lib.utils.generate_test_options()
+    options["username"] = username
 
-        if version not in version_ids:
-            return False, (
-                f"Version {version} not installed.\n"
-                f"Minecraft dir: {minecraft_dir}\n"
-                f"Installed versions: {', '.join(version_ids) or 'none'}"
-            )
-
-        # Build launch options for offline mode
-        options = minecraft_launcher_lib.utils.generate_test_options()
-        options["username"] = username
-
+    try:
         command = minecraft_launcher_lib.command.get_minecraft_command(
             version, minecraft_dir, options
         )
         subprocess.Popen(command)
         return True, f"Minecraft {version} launched as {username}!"
-
-    except ImportError:
-        # Fallback: try launching the system Minecraft directly
-        return _fallback_launch(minecraft_dir, username)
+    except Exception as e:
+        return False, f"Launch failed: {e}"
 
 
 def _fallback_launch(minecraft_dir, username):
@@ -64,7 +106,6 @@ def _fallback_launch(minecraft_dir, username):
             "Install Minecraft or pip install minecraft-launcher-lib"
         )
 
-    # Look for the official launcher executable
     system = platform.system()
     launcher_path = None
 
@@ -78,7 +119,6 @@ def _fallback_launch(minecraft_dir, username):
                 launcher_path = path
                 break
     elif system == "Linux":
-        # Try common Linux launcher command
         launcher_path = "minecraft-launcher"
 
     if launcher_path:
