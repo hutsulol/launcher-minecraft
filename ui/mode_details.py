@@ -6,7 +6,7 @@ import threading
 
 from launcher.minecraft_runner import (
     is_version_installed, install_version, launch_version, VERSION,
-    is_forge_installed, install_forge, get_minecraft_dir,
+    is_neoforge_installed, install_neoforge, get_minecraft_dir,
 )
 from launcher.mod_manager import apply_modpack
 from ui.theme import (
@@ -394,7 +394,7 @@ class ModeDetailsScreen(tk.Frame):
         thread.start()
 
     def _install_and_launch(self):
-        """Worker thread: install Minecraft + Forge if needed, then launch."""
+        """Worker thread: install Minecraft + NeoForge if needed, then launch."""
         try:
             # Step 1 — install vanilla Minecraft if needed
             self.after(0, self._show_status, "Checking installation...")
@@ -409,16 +409,16 @@ class ModeDetailsScreen(tk.Frame):
                     return
                 self.after(0, self._show_status, "Minecraft installed!")
 
-            # Step 2 — install Forge if needed
-            if not is_forge_installed():
-                self.after(0, self._show_status, "Installing Forge...")
-                ok, err = install_forge(
+            # Step 2 — install NeoForge if needed
+            if not is_neoforge_installed():
+                self.after(0, self._show_status, "Installing NeoForge...")
+                ok, err = install_neoforge(
                     progress_callback=self._on_install_progress
                 )
                 if not ok:
                     self.after(0, self._on_error, err)
                     return
-                self.after(0, self._show_status, "Forge installed!")
+                self.after(0, self._show_status, "NeoForge installed!")
 
             # Step 3 — apply modpack for the selected mode
             self.after(0, self._show_status, "Preparing mods...")
@@ -431,7 +431,7 @@ class ModeDetailsScreen(tk.Frame):
                 self.after(0, self._on_error, err)
                 return
 
-            # Step 4 — launch (automatically uses Forge version)
+            # Step 4 — launch (automatically uses NeoForge version)
             self.after(0, self._show_status, "Launching game...")
             ok, msg = launch_version(self.username)
 
