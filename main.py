@@ -1,7 +1,10 @@
 """Lungi Launcher — Main entry point.
 
 A pirate-themed Minecraft launcher with user authentication,
-server cards, version selection, and threaded install/launch.
+mode details, version selection, and threaded install/launch.
+
+Navigation flow:
+  Login → Launcher (mode cards) → ModeDetails (play/install)
 """
 
 import tkinter as tk
@@ -10,6 +13,7 @@ from auth.database import user_exists
 from ui.login import LoginScreen
 from ui.register import RegisterScreen
 from ui.launcher import LauncherScreen
+from ui.mode_details import ModeDetailsScreen
 from ui.theme import BG_DEEP, WIN_WIDTH, WIN_HEIGHT
 
 
@@ -30,10 +34,12 @@ class LungiLauncher(tk.Tk):
         self.geometry(f"+{x}+{y}")
 
         self.current_frame = None
+        self._username = None
 
         # Auto-login if session exists
         saved_user = load_session()
         if saved_user and user_exists(saved_user):
+            self._username = saved_user
             self._show_launcher(saved_user)
         else:
             self._show_login()
@@ -63,12 +69,25 @@ class LungiLauncher(tk.Tk):
         self.current_frame.pack(fill="both", expand=True)
 
     def _show_launcher(self, username):
-        """Display the main launcher screen."""
+        """Display the main launcher screen (mode card grid)."""
+        self._username = username
         self._clear_frame()
         self.current_frame = LauncherScreen(
             self,
             username=username,
             on_logout=self._show_login,
+            on_mode_select=self._show_mode_details,
+        )
+        self.current_frame.pack(fill="both", expand=True)
+
+    def _show_mode_details(self, mode_data):
+        """Display the details screen for a specific mode."""
+        self._clear_frame()
+        self.current_frame = ModeDetailsScreen(
+            self,
+            mode_data=mode_data,
+            username=self._username,
+            on_back=lambda: self._show_launcher(self._username),
         )
         self.current_frame.pack(fill="both", expand=True)
 

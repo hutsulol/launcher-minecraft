@@ -5,24 +5,74 @@
         "icon": "\u2693",
         "badge": "NEW"
     },
-    "servers": [
+    "modes": [
         {
-            "title": "Pirate RPG",
+            "id": "lungi",
+            "title": "Lungi",
             "desc": "Open-world pirate adventure",
             "icon": "\u2694",
-            "players": 1284
+            "players": 1284,
+            "coming_soon": false,
+            "description": "Embark on an epic pirate adventure across vast oceans and uncharted islands. Build your ship, recruit a crew, and plunder your way to legendary status. Trade with merchants, battle rival pirates, and discover ancient treasures hidden deep within mysterious caves.",
+            "features": [
+                "Open-world exploration",
+                "Ship building & customization",
+                "Crew recruitment system",
+                "Treasure hunting quests",
+                "Player-driven economy",
+                "PvP naval combat"
+            ],
+            "wipe_date": "01 March 2026",
+            "gallery": [
+                "Sailing the open seas at sunset",
+                "Exploring a hidden treasure cave",
+                "Epic naval battle with cannons",
+                "Trading at the pirate port"
+            ]
         },
         {
+            "id": "sea_battle",
+            "title": "Sea Battle",
+            "desc": "Naval warfare and ship combat",
+            "icon": "\u2693",
+            "players": 0,
+            "coming_soon": true,
+            "description": "Command powerful warships in intense naval battles. Coordinate with your fleet, outmaneuver your enemies, and dominate the seas. Coming soon with full fleet management, ranked matchmaking, and seasonal tournaments.",
+            "features": [
+                "Fleet-based combat",
+                "Ranked matchmaking",
+                "Seasonal tournaments",
+                "Ship upgrade trees"
+            ],
+            "wipe_date": null,
+            "gallery": [
+                "Fleet formation in open waters",
+                "Broadside cannon barrage",
+                "Victory celebration at port"
+            ]
+        },
+        {
+            "id": "treasure_islands",
             "title": "Treasure Islands",
             "desc": "Explore and loot hidden islands",
             "icon": "\u26f5",
-            "players": 873
-        },
-        {
-            "title": "PvP Seas",
-            "desc": "Ship battles and naval warfare",
-            "icon": "\u2693",
-            "players": 2041
+            "players": 873,
+            "coming_soon": false,
+            "description": "Discover procedurally generated islands filled with puzzles, traps, and legendary loot. Each island is unique \u2014 solve ancient riddles, navigate deadly dungeons, and race other players to claim the treasure before it vanishes.",
+            "features": [
+                "Procedural island generation",
+                "Puzzle & dungeon crawling",
+                "Competitive treasure races",
+                "Rare loot & collectibles",
+                "Co-op exploration mode"
+            ],
+            "wipe_date": "15 February 2026",
+            "gallery": [
+                "Discovering a hidden island",
+                "Solving an ancient temple puzzle",
+                "Racing to the treasure chest",
+                "Co-op dungeon exploration"
+            ]
         }
     ]
 }
