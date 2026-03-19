@@ -4,6 +4,9 @@ import subprocess
 import os
 import platform
 
+# The single hardcoded version used everywhere
+VERSION = "1.21.4"
+
 
 def get_minecraft_dir():
     """Return the default .minecraft directory path for the current OS."""
@@ -16,20 +19,20 @@ def get_minecraft_dir():
         return os.path.expanduser("~/.minecraft")
 
 
-def is_version_installed(version, minecraft_dir=None):
-    """Check whether a Minecraft version is already installed locally."""
+def is_version_installed(minecraft_dir=None):
+    """Check whether the hardcoded VERSION is already installed locally."""
     if minecraft_dir is None:
         minecraft_dir = get_minecraft_dir()
     try:
         import minecraft_launcher_lib
         installed = minecraft_launcher_lib.utils.get_installed_versions(minecraft_dir)
-        return version in [v["id"] for v in installed]
+        return VERSION in [v["id"] for v in installed]
     except ImportError:
         return False
 
 
-def install_version(version, progress_callback=None, minecraft_dir=None):
-    """Install a Minecraft version using minecraft-launcher-lib.
+def install_version(progress_callback=None, minecraft_dir=None):
+    """Install the hardcoded VERSION using minecraft-launcher-lib.
 
     progress_callback(stage, progress, max_progress):
         stage       - string like "Installing Minecraft...", "Downloading libraries..."
@@ -58,7 +61,7 @@ def install_version(version, progress_callback=None, minecraft_dir=None):
 
     try:
         minecraft_launcher_lib.install.install_minecraft_version(
-            version, minecraft_dir, callback=callback
+            VERSION, minecraft_dir, callback=callback
         )
         return True, ""
     except Exception as e:
@@ -71,8 +74,8 @@ def install_version(version, progress_callback=None, minecraft_dir=None):
         return False, f"Installation failed: {error_msg}"
 
 
-def launch_version(username, version, minecraft_dir=None):
-    """Launch an already-installed Minecraft version in offline mode.
+def launch_version(username, minecraft_dir=None):
+    """Launch the hardcoded VERSION in offline mode.
 
     Returns (success, message) tuple.
     """
@@ -90,10 +93,10 @@ def launch_version(username, version, minecraft_dir=None):
 
     try:
         command = minecraft_launcher_lib.command.get_minecraft_command(
-            version, minecraft_dir, options
+            VERSION, minecraft_dir, options
         )
         subprocess.Popen(command)
-        return True, f"Minecraft {version} launched as {username}!"
+        return True, f"Minecraft {VERSION} launched as {username}!"
     except Exception as e:
         return False, f"Launch failed: {e}"
 

@@ -5,19 +5,17 @@ from tkinter import ttk
 import threading
 
 from launcher.minecraft_runner import (
-    is_version_installed, install_version, launch_version,
+    is_version_installed, install_version, launch_version, VERSION,
 )
 from ui.theme import (
     BG_DEEP, BG_DARK, BG_CARD, BG_CARD_HOVER,
     GOLD, GOLD_DIM, EMERALD, EMERALD_HOVER,
     FG_TEXT, FG_MUTED, FG_ERROR, FG_SUCCESS,
-    BTN_PRIMARY, BTN_SECONDARY,
-    FONT_TITLE, FONT_HEADING, FONT_BODY, FONT_SMALL, FONT_TINY, FONT_PLAY,
+    BTN_SECONDARY,
+    FONT_HEADING, FONT_BODY, FONT_SMALL, FONT_TINY, FONT_PLAY,
     WIN_WIDTH,
     draw_rounded_rect,
 )
-
-VERSIONS = ["1.20.4", "1.20.1", "1.19.4", "1.18.2"]
 
 
 class ModeDetailsScreen(tk.Frame):
@@ -316,7 +314,7 @@ class ModeDetailsScreen(tk.Frame):
     # ------------------------------------------------------------------
 
     def _build_play_panel(self, parent):
-        """Build the right-side panel with Play button, version selector, progress."""
+        """Build the right-side panel with Play button and progress."""
         coming_soon = self.mode.get("coming_soon", False)
 
         # Mode icon + title
@@ -328,36 +326,7 @@ class ModeDetailsScreen(tk.Frame):
         tk.Label(
             parent, text=self.mode["title"], font=FONT_HEADING,
             fg=FG_TEXT, bg=BG_DARK,
-        ).pack(pady=(0, 10))
-
-        # Version selector
-        ver_frame = tk.Frame(parent, bg=BG_DARK)
-        ver_frame.pack(pady=(0, 8))
-
-        tk.Label(
-            ver_frame, text="Version:", font=FONT_TINY,
-            fg=FG_MUTED, bg=BG_DARK,
-        ).pack(side="left", padx=(0, 5))
-
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(
-            "Pirate.TCombobox",
-            fieldbackground=BG_CARD,
-            background=BTN_SECONDARY,
-            foreground=FG_TEXT,
-            arrowcolor=GOLD,
-            selectbackground=BG_CARD,
-            selectforeground=FG_TEXT,
-        )
-
-        self.version_var = tk.StringVar(value=VERSIONS[0])
-        self.version_combo = ttk.Combobox(
-            ver_frame, textvariable=self.version_var, values=VERSIONS,
-            state="disabled" if coming_soon else "readonly",
-            width=10, font=FONT_SMALL, style="Pirate.TCombobox",
-        )
-        self.version_combo.pack(side="left")
+        ).pack(pady=(0, 15))
 
         # Play button
         if coming_soon:
@@ -416,21 +385,20 @@ class ModeDetailsScreen(tk.Frame):
         self._progress_max = 0
         self._progress_current = 0
 
-        version = self.version_var.get()
         thread = threading.Thread(
-            target=self._install_and_launch, args=(version,), daemon=True
+            target=self._install_and_launch, daemon=True
         )
         thread.start()
 
-    def _install_and_launch(self, version):
+    def _install_and_launch(self):
         """Worker thread: install if needed, then launch."""
         try:
             self.after(0, self._show_status, "Checking installation...")
 
-            if not is_version_installed(version):
+            if not is_version_installed():
                 self.after(0, self._show_status, "Installing Minecraft...")
                 ok, err = install_version(
-                    version, progress_callback=self._on_install_progress
+                    progress_callback=self._on_install_progress
                 )
                 if not ok:
                     self.after(0, self._on_error, err)
@@ -438,7 +406,7 @@ class ModeDetailsScreen(tk.Frame):
                 self.after(0, self._show_status, "Installation complete!")
 
             self.after(0, self._show_status, "Launching game...")
-            ok, msg = launch_version(self.username, version)
+            ok, msg = launch_version(self.username)
 
             if ok:
                 self.after(0, self._on_launch_success, msg)
@@ -494,4 +462,3 @@ class ModeDetailsScreen(tk.Frame):
     def _set_controls_enabled(self, enabled):
         state = "normal" if enabled else "disabled"
         self.play_btn.config(state=state, bg=EMERALD if enabled else BTN_SECONDARY)
-        self.version_combo.config(state="readonly" if enabled else "disabled")

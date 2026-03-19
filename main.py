@@ -1,7 +1,7 @@
 """Lungi Launcher — Main entry point.
 
 A pirate-themed Minecraft launcher with user authentication,
-mode details, version selection, and threaded install/launch.
+mode details and threaded install/launch.
 
 Navigation flow:
   Login → Launcher (mode cards) → ModeDetails (play/install)
