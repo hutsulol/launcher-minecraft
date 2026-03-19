@@ -28,6 +28,16 @@
                 "Exploring a hidden treasure cave",
                 "Epic naval battle with cannons",
                 "Trading at the pirate port"
+            ],
+            "mods": [
+                {
+                    "name": "lungi-core-1.0.jar",
+                    "url": "https://example.com/mods/lungi-core-1.0.jar"
+                },
+                {
+                    "name": "pirate-ships-1.2.jar",
+                    "url": "https://example.com/mods/pirate-ships-1.2.jar"
+                }
             ]
         },
         {
@@ -49,7 +59,8 @@
                 "Fleet formation in open waters",
                 "Broadside cannon barrage",
                 "Victory celebration at port"
-            ]
+            ],
+            "mods": []
         },
         {
             "id": "treasure_islands",
@@ -72,6 +83,12 @@
                 "Solving an ancient temple puzzle",
                 "Racing to the treasure chest",
                 "Co-op dungeon exploration"
+            ],
+            "mods": [
+                {
+                    "name": "treasure-islands-1.0.jar",
+                    "url": "https://example.com/mods/treasure-islands-1.0.jar"
+                }
             ]
         }
     ]
